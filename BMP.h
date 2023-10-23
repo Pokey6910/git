@@ -45,9 +45,11 @@ struct BMP {
     BMP(const char *fname) {
         read_file(fname);
     }
-
+    /* Следовало вынести определения метод в cpp файл, ради раздельной
+     * компиляции */
     void read_file(const char *fname) {
     	std:: ifstream image{fname, std::ios_base::binary};
+        /* Тут Виктор Михайлович просил использовать is_open() */
         if (image) {
             image.read((char*)&bmp_header, sizeof(bmp_header));
             uint32_t pix_len = bmp_header.bit_count / 8;
@@ -85,12 +87,14 @@ struct BMP {
 
         for (uint32_t y = 0; y < bmp_header.height; y++){
             for (uint32_t x = 0; x < bmp_header.width; x++){
+                /* Слишком длинная строка, такое разбивать нужно на несколько выражений */
                 int32_t ind_cur = pix_len * (bmp_header.height * (bmp_header.width - x - 1) + y) + (bmp_header.width - x - 1) * padding_new;
                 for (int pix = 0; pix < pix_len; pix++) {
                     data_pix[ind_cur + pix] = data_sup[pix_len * (x + y * bmp_header.width) + y * padding_cur + pix];
                 }
             }
         }
+        /* Можно было просто использовать swap, что за странное жонглирование */
         bmp_header.height += bmp_header.width;
         bmp_header.width = bmp_header.height - bmp_header.width;
         bmp_header.height -= bmp_header.width;
@@ -118,7 +122,8 @@ struct BMP {
         bmp_header.width = bmp_header.height - bmp_header.width;
         bmp_header.height -= bmp_header.width;
     }
-
+    /* Гаусс больно медленно работает. Я думаю, сигму можно просто задавать,
+     * больно долго она вычисляется */
     void gauss_filter(int r) {
         std::vector <uint8_t> data_sup((bmp_header.width + r *2 ) * (bmp_header.height + r * 2) * bmp_header.bit_count / 8);
         uint32_t pix_len = bmp_header.bit_count / 8;
@@ -146,6 +151,8 @@ struct BMP {
         sigm = sqrt(sigm_sup);
         const double PI = 3.141;
         std:: vector <double> d(4);
+        /* Очень сильная вложенность получилась, нехорошо смотрится. 
+         * надо разделить как-то, например, вспомогательной функцией */
         for (int y = 0; y < bmp_header.height; y++){
             for (int x = 0; x < bmp_header.width; x++){
                 d = {0, 0, 0, 0};
